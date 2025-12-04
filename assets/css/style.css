@@ -1,0 +1,257 @@
+/* Asinazionale Plugin Styles - Minimal Material Design */
+
+:root {
+    --asin-primary: var(--wp-preset-color-primary, #6750a4);
+    --asin-on-primary: #ffffff;
+    --asin-surface: var(--wp--preset--color-background, #ffffff);
+    --asin-text: var(--wp--preset--color-foreground, #111111);
+    --asin-muted: rgba(17,17,17,0.6);
+}
+
+/* Container */
+.asinazionale {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 18px 0;
+    font-family: inherit; /* inherit theme font */
+}
+
+.asinazionale .wp_block_group {
+    flex: 1 1 220px;
+    min-width: 180px;
+}
+
+/* Label - minimal, inherit color from theme */
+.asinazionale label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--asin-text);
+    text-transform: none; /* cleaner, more minimal */
+    opacity: 0.88;
+}
+
+/* Inputs - subtle Material outlined */
+.asinazionale input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1rem;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 8px;
+    background-color: var(--asin-surface);
+    color: var(--asin-text);
+    box-sizing: border-box;
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.asinazionale input[type="text"]::placeholder {
+    color: rgba(0,0,0,0.38);
+}
+
+.asinazionale input[type="text"]:hover {
+    border-color: rgba(0,0,0,0.18);
+}
+
+.asinazionale input[type="text"]:focus {
+    outline: none;
+    border-color: var(--asin-primary);
+    box-shadow: 0 4px 10px rgba(16,24,40,0.06);
+}
+
+.asinazionale input[type="text"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Button container */
+.asinazionale .wp_block_button {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+/* Button - flat, minimal Material style with subtle elevation */
+.asinazionale button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    min-height: 40px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    background-color: var(--asin-primary);
+    color: var(--asin-on-primary);
+    box-shadow: 0 2px 6px rgba(16,24,40,0.08);
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* subtle ripple using scale */
+.asinazionale button::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,0.18);
+    border-radius: 50%;
+    transform: translate(-50%,-50%) scale(0);
+    opacity: 0;
+    transition: width .28s ease, height .28s ease, opacity .28s ease, transform .28s ease;
+}
+
+.asinazionale button:active::after {
+    width: 220px;
+    height: 220px;
+    transform: translate(-50%,-50%) scale(1);
+    opacity: 1;
+}
+
+.asinazionale button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(16,24,40,0.10);
+}
+
+.asinazionale button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(16,24,40,0.06);
+}
+
+.asinazionale button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+    .asinazionale {
+        flex-direction: column;
+        gap: 10px;
+        margin: 12px 0;
+        padding: 0 12px; /* small horizontal padding so elements don't touch edges */
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .asinazionale .wp_block_group {
+        width: 100%;
+        min-width: 0; /* allow shrinking to viewport */
+        flex: none;
+    }
+
+    .asinazionale .wp_block_button {
+        width: 100%;
+        display: flex;
+        justify-content: stretch;
+    }
+
+    .asinazionale button {
+        width: 100%;
+        font-size: 0.98rem;
+        padding: 12px 16px;
+    }
+
+    .asinazionale input[type="text"] {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+/* Error Message - Material Design toast style */
+.asinazionale-error,
+.error-message {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    background-color: #f9dedc;
+    color: #5f2c2b;
+    border-radius: 8px;
+    border-left: 4px solid #b3261e;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 8px rgba(179,38,30,0.12);
+    animation: slideInError 0.28s ease-out, fadeOutError 0.3s ease-in 4.7s forwards;
+    position: relative;
+    line-height: 1.4;
+    overflow: hidden;
+}
+
+@keyframes slideInError {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOutError {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+}
+
+/* Error progress bar indicator */
+.asinazionale-error::before,
+.error-message::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
+    animation: progressError 5s linear forwards;
+    pointer-events: none;
+}
+
+@keyframes progressError {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
+
+/* Dark mode error message */
+@media (prefers-color-scheme: dark) {
+    .asinazionale-error,
+    .error-message {
+        background-color: #4a1f1c;
+        color: #f9dedc;
+        border-left-color: #f6685e;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.32);
+    }
+}
+
+/* Dark mode tweaks */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --asin-surface: #141416;
+        --asin-text: #eaeaea;
+    }
+    .asinazionale input[type="text"] {
+        border-color: rgba(255,255,255,0.06);
+        background-color: #171718;
+        color: var(--asin-text);
+    }
+    .asinazionale input[type="text"]::placeholder { color: rgba(255,255,255,0.28); }
+    .asinazionale button::after { background: rgba(0,0,0,0.12); }
+}
