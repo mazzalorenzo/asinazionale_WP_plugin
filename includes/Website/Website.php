@@ -3,34 +3,55 @@
 namespace Asinazionale\Website;
 
 class Website {
-    protected const WEBSITE_URL = 'http://tesseramento.asinazionale.it/';
-    protected static $ch;
-    protected static $user;
-    protected static $pass;
-    protected static $cookie_jar;
+    protected const WEBSITE_URL = 'https://tesseramento.asinazionale.it/';
+    protected static $ch = null;
+    protected static $user = null;
+    protected static $pass = null;
+    protected static $cookie_jar = null;
 
     public function __construct() {
-        self::$ch = curl_init();
-        self::$user = get_option('asinazionale_user', '');
-        self::$pass = get_option('asinazionale_pass', '');
-        self::$cookie_jar = sys_get_temp_dir() . 'asinazionalecookies.txt';
-        self::init();
-#        $this->check_credentials();
+        if (self::$user === null) {
+            self::$user = trim((string)get_option('asinazionale_user', ''));
+        }
+        if (self::$pass === null) {
+            self::$pass = (string)get_option('asinazionale_pass', '');
+        }
+
+        if (empty(self::$cookie_jar) || !file_exists(self::$cookie_jar)) {
+            self::$cookie_jar = tempnam(sys_get_temp_dir(), 'asi_cookie_');
+        }
+
+        if (self::$ch === null || !is_resource(self::$ch) && !(self::$ch instanceof \CurlHandle)) {
+            self::$ch = curl_init();
+            self::init();
+        }
     }
 
-    function __destruct() {
-#        curl_close(self::$ch);
+    public function __destruct() {
+        // Cleanup resources if needed
+    }
+
+    public static function cleanup() {
+        if (self::$ch) {
+            if (is_resource(self::$ch) || self::$ch instanceof \CurlHandle) {
+                curl_close(self::$ch);
+            }
+            self::$ch = null;
+        }
+        if (self::$cookie_jar && file_exists(self::$cookie_jar)) {
+            @unlink(self::$cookie_jar);
+            self::$cookie_jar = null;
+        }
     }
 
     /**
      * Return configured credentials for ASI Nazionale.
-     * Priority: options (plugin settings) -> constants defined in wp-config.php -> empty
-     * @return bool|WP_Error True if credentials are set, WP_Error otherwise.
+     * @return bool|\WP_Error True if credentials are set, WP_Error otherwise.
      */
-    private function check_credentials() {
+    protected function check_credentials() {
         if (empty(self::$user) || empty(self::$pass)) {
             $error = 'config_error';
-            $message = "Credenziali ASI Nazionale non impostate. Contattare l\'amministratore del sito";
+            $message = "Credenziali ASI Nazionale non impostate. Contattare l'amministratore del sito";
             do_action('asinazionale_show_error', $message);
             do_action('asinazionale_log', $message);
             return new \WP_Error($error, $message);
@@ -40,58 +61,65 @@ class Website {
     }
     
     public static function init() {
+        if (!self::$ch) return;
 
-        // Common cURL setup
-        curl_setopt_array( self::$ch, array(
-            CURLOPT_SSL_VERIFYHOST => false,
+        curl_setopt_array(self::$ch, array(
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS => 5,
-            // enable cookie engine: read and write cookies to the same temporary file
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/142.0 Safari/537.36',
             CURLOPT_COOKIEJAR => self::$cookie_jar,
             CURLOPT_COOKIEFILE => self::$cookie_jar,
+            CURLOPT_ENCODING => '',
         ));
-
     }
 
-    function asinazionale($cf){
-        // Alternative using PHP curl directly for exact curl behavior (like bash curl)
-        if ( !function_exists( 'curl_init' ) ) {
-            return 'cURL not available on this server';
+    public function asinazionale($cf) {
+        if (!function_exists('curl_init')) {
+            return new \WP_Error('curl_missing', 'cURL non è disponibile su questo server.');
         }
 
         $credentials_check = $this->check_credentials();
-        if( is_wp_error($credentials_check) ) {
-            return 'Credenziali non valide.';
+        if (is_wp_error($credentials_check)) {
+            self::cleanup();
+            return $credentials_check;
         }
-        else {
-            $login = new Login();
-            if(!$login->login()) {
-                // Login failed, error already handled in asinazionale_login
-                return;
-            }
-            $search = new Search($cf);
-            $search_results = $search->search_results();
 
-            if($search_results == 1){
-                // don't output HTML/JS here; it will break PDF headers. Log for debugging instead
-            #    error_log('Tessera trovata, scaricamento PDF...');                
-                $id_tessera = $search->get_id_tessera();
-                (new Download)->tessera_download($id_tessera);
-            } elseif ($search_results > 1) {
-                // Avoid sending alerts which break binary response
-                error_log('Errore: più di una tessera trovata per questo codice fiscale.');
-                echo "<script>document.addEventListener('DOMContentLoaded', function() { if(window.asinazionaleShowError) window.asinazionaleShowError('Errore: più di una tessera trovata per questo codice fiscale.'); });</script>";
-            } else {
-                $error = ' Search error';
-                $message = 'Nessuna tessera trovata per questo codice fiscale';
-                do_action('asinazionale_show_error', $message);
-#                error_log('Errore: nessuna tessera trovata per questo codice fiscale.');
-#                echo "<script>document.addEventListener('DOMContentLoaded', function() { if(window.asinazionaleShowError) window.asinazionaleShowError('Errore: nessuna tessera trovata per questo codice fiscale.'); });</script>";
+        $login = new Login();
+        $login_result = $login->login();
+        if (is_wp_error($login_result)) {
+            self::cleanup();
+            return $login_result;
+        }
+
+        $search = new Search($cf);
+        $search_results = $search->search_results();
+
+        if (is_wp_error($search_results)) {
+            self::cleanup();
+            return $search_results;
+        }
+
+        if ($search_results == 1) {
+            $id_tessera = $search->get_id_tessera();
+            if (!$id_tessera) {
+                self::cleanup();
+                return new \WP_Error('search_error', 'Tessera trovata ma identificativo non valido.');
             }
-            curl_close(self::$ch);
-            return "Login Response:\n";
+            $download = new Download();
+            $pdf = $download->tessera_download($id_tessera);
+            self::cleanup();
+            return $pdf;
+        } elseif ($search_results > 1) {
+            self::cleanup();
+            return new \WP_Error('search_error', 'Errore: più di una tessera trovata per questo codice fiscale.');
+        } else {
+            self::cleanup();
+            return new \WP_Error('search_error', 'Nessuna tessera trovata per questo codice fiscale.');
         }
     }
-
-}
+}

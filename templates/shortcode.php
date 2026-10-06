@@ -1,3 +1,8 @@
+<?php if (!empty($_GET['asi_error'])): ?>
+    <div class="alert alert-danger" role="alert">
+        <?php echo esc_html(wp_unslash($_GET['asi_error'])); ?>
+    </div>
+<?php endif; ?>
 <div class="container">
     <form method="post" class="asinazionale">
         <div class="mb-3">
@@ -10,4 +15,4 @@
             <button type="submit" name="asinazionale" class="btn btn-primary">Scarica Tessera</button>
         </div>
     </form>
-</div>
+</div>

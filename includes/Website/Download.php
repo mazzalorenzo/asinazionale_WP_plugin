@@ -3,65 +3,68 @@
 namespace Asinazionale\Website;
 
 class Download extends Website {
-    private const STAMPA_FOGLIO_URL = 'http://tesseramento.asinazionale.it/tessera01.php';
-    private const STAMPA_FRONTE_RETRO_URL = 'http://tesseramento.asinazionale.it/tessera02.php';
-    private const STAMPA_CARD_URL = 'http://tesseramento.asinazionale.it/tessera03.php';
+    private const STAMPA_FOGLIO_URL = 'https://tesseramento.asinazionale.it/tessera01.php';
+    private const STAMPA_FRONTE_RETRO_URL = 'https://tesseramento.asinazionale.it/tessera02.php';
+    private const STAMPA_CARD_URL = 'https://tesseramento.asinazionale.it/tessera03.php';
 
+    public function tessera_download($id_tessera) {
+        $params = array(
+            'isFSN' => 0,
+            'isCP' => 0,
+            'isSOC' => 0,
+            'username_utente' => self::$user,
+            'bt' => 'fd',
+            'btn' => '',
+            'idLotto' => 'idLotto',
+            'id_tessera' => $id_tessera,
+            'canwrite' => 0,
+            'societa_fltr' => '',
+            'codAff_fltr' => self::$user,
+            'referente_fltr' => '',
+            'regione' => 0,
+            'cognome_fltr' => '',
+            'nome_fltr' => '',
+            'age' => '-',
+            'cod_fisc_fltr' => '',
+            'discipline_fltr' => 0,
+            'nrTessMag_fltr' => '',
+            'nrTessMin_fltr' => '',
+            'tipotesseraAsi' => 0,
+            'dataAtMax' => '',
+            'dataAtMin' => '',
+            'dataScMax' => '',
+            'dataScMin' => '',
+            'stagioneSportiva_fltr' => '',
+            'TesseratiDT_length' => 10,
+        );
 
-    function tessera_download($id_tessera) {
-        // Implementa la funzione di download della tessera qui
-
-        // Body esattamente come nel tuo curl
-        $postfields = "isFSN=0&isCP=0&isSOC=1&isSOC=0&username_utente=" . urlencode(self::$user) . "&bt=fd&btn=&idLotto=idLotto&id_tessera=$id_tessera&canwrite=0&societa_fltr=&codAff_fltr=" . urlencode(self::$user) . "&referente_fltr=&regione=0&cognome_fltr=&nome_fltr=&age=-&cod_fisc_fltr=&discipline_fltr=0&nrTessMag_fltr=&nrTessMin_fltr=&tipotesseraAsi=0&dataAtMax=&dataAtMin=&dataScMax=&dataScMin=&stagioneSportiva_fltr=&TesseratiDT_length=10";
-
-        // Headers
-        curl_setopt_array( self::$ch, array(
+        curl_setopt_array(self::$ch, array(
             CURLOPT_URL => self::STAMPA_FOGLIO_URL,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $postfields,
-            CURLOPT_COOKIEFILE => self::$cookie_jar,
+            CURLOPT_POSTFIELDS => http_build_query($params, '', '&'),
             CURLOPT_HTTPHEADER => array(
-                "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-                "Accept-Language: it,it-IT;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-                "Cache-Control: no-cache",
-                "Connection: keep-alive",
-                "Content-Type: application/x-www-form-urlencoded",
-                "Origin: http://tesseramento.asinazionale.it",
-                "Pragma: no-cache",
-                "Referer: http://tesseramento.asinazionale.it/tessere",
-                "Upgrade-Insecure-Requests: 1",
+                'Accept: application/pdf,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language: it-IT,it;q=0.9,en;q=0.7',
+                'Content-Type: application/x-www-form-urlencoded',
+                'Origin: https://tesseramento.asinazionale.it',
+                'Referer: https://tesseramento.asinazionale.it/tessere',
             )
         ));
-
-        // Ricevi il contenuto
-        curl_setopt(self::$ch, CURLOPT_RETURNTRANSFER, true);
 
         $response = curl_exec(self::$ch);
 
         if (curl_errno(self::$ch)) {
-            echo "Errore cURL: " . curl_error(self::$ch);
-            curl_close(self::$ch);
-            return;
+            $error_msg = curl_error(self::$ch);
+            do_action('asinazionale_log', 'Errore cURL download: ' . $error_msg);
+            return new \WP_Error('curl_error', 'Errore durante il download del PDF.');
         }
-        
-        // Clear any buffered output before sending binary PDF
-        if (ob_get_level()) {
-            ob_clean();
+
+        $is_pdf = (strncmp($response, '%PDF-', 5) === 0);
+        if (!$is_pdf) {
+            do_action('asinazionale_log', 'Risposta download non PDF');
+            return new \WP_Error('invalid_pdf', 'Il portale ASI non ha restituito un file PDF valido.');
         }
-        
-        // Scarica il PDF
-        header("Content-Type: application/pdf");
-        header("Content-Disposition: attachment; filename=\"tessera.pdf\"");
-        header("Content-Length: " . strlen($response));
-        header("Cache-Control: no-cache, must-revalidate");
-        header("Expires: 0");
 
-        echo $response;
-        return;
-//        wp_die();
+        return $response;
     }
-
-    public function download_pdf(){
-
-    }
-}
+}
