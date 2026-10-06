@@ -35,14 +35,14 @@ class Login extends Website {
         }
 
         if (is_wp_error($attempt_result)) {
-            $error = $attempt_result->get_error_code();
             $error_message = $attempt_result->get_error_message();
-            do_action('asinazionale_show_error', $error_message, $error);
+            do_action('asinazionale_log', $error_message);
             return $attempt_result;
         } else {
             return true;
         }
     }
+
 
     public function login_attempt() {
         $postdata = http_build_query(array(
@@ -109,4 +109,4 @@ class Login extends Website {
             return new \WP_Error($error_code, $error_message);
         }
     }
-}
+}

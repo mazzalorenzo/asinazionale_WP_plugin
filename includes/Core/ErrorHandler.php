@@ -26,32 +26,15 @@ class ErrorHandler {
     }
 
     public function user_log($message = null, $title = 'Errore') {
-        echo 
-        '<div class="alert alert-warning alert-dismissible fade show" role="alert">
-        <h4 class="alert-heading">' . $title . '</h4>
-        <p>' . $message . '</p>
-           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
-            </button>
+        if (empty($message)) {
+            return;
+        }
+        echo '
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+            <h4 class="alert-heading">' . esc_html($title) . '</h4>
+            <p class="mb-0">' . esc_html($message) . '</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>';
-#        include ASINAZIONALE_PLUGIN_PATH . 'templates/error-message.php';
-        echo 
-        '<div class="modal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Modal title</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <p>Modal body text goes here.</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div>
-    </div>
-  </div>
-</div>';
-
     }
 }
+

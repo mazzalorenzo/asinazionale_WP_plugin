@@ -104,7 +104,7 @@ class Website {
             return $search_results;
         }
 
-        if ($search_results == 1) {
+        if ($search_results >= 1) {
             $id_tessera = $search->get_id_tessera();
             if (!$id_tessera) {
                 self::cleanup();
@@ -114,12 +114,10 @@ class Website {
             $pdf = $download->tessera_download($id_tessera);
             self::cleanup();
             return $pdf;
-        } elseif ($search_results > 1) {
-            self::cleanup();
-            return new \WP_Error('search_error', 'Errore: più di una tessera trovata per questo codice fiscale.');
         } else {
             self::cleanup();
             return new \WP_Error('search_error', 'Nessuna tessera trovata per questo codice fiscale.');
         }
     }
-}
+}
+

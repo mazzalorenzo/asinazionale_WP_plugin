@@ -9,15 +9,33 @@ class Shortcode {
         add_action('template_redirect', [$this, 'handle_download_request'], 1);
     }
 
+    private function get_return_url() {
+        $referer = wp_get_referer();
+        if ($referer) {
+            return $referer;
+        }
+        if (!empty($_POST['asi_current_url'])) {
+            $path = wp_unslash($_POST['asi_current_url']);
+            if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
+                return esc_url_raw($path);
+            }
+            return home_url($path);
+        }
+        if (!empty($_SERVER['REQUEST_URI'])) {
+            return home_url(wp_unslash($_SERVER['REQUEST_URI']));
+        }
+        return home_url('/');
+    }
+
+
     public function handle_download_request() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['asinazionale']) || empty($_POST['cf'])) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['cf'])) {
             return;
         }
 
         $cf = strtoupper(preg_replace('/[^A-Z0-9]/i', '', wp_unslash($_POST['cf'])));
         if (empty($cf) || strlen($cf) < 11 || strlen($cf) > 16) {
-            $referer = wp_get_referer() ?: home_url('/');
-            wp_safe_redirect(add_query_arg('asi_error', rawurlencode('Codice fiscale non valido.'), $referer));
+            wp_safe_redirect(add_query_arg('asi_error', rawurlencode('Codice fiscale non valido.'), $this->get_return_url()));
             exit;
         }
 
@@ -25,8 +43,7 @@ class Shortcode {
         $result = $website->asinazionale($cf);
 
         if (is_wp_error($result)) {
-            $referer = wp_get_referer() ?: home_url('/');
-            wp_safe_redirect(add_query_arg('asi_error', rawurlencode($result->get_error_message()), $referer));
+            wp_safe_redirect(add_query_arg('asi_error', rawurlencode($result->get_error_message()), $this->get_return_url()));
             exit;
         }
 
@@ -41,9 +58,8 @@ class Shortcode {
             echo $result;
             exit;
         } else {
-            $referer = wp_get_referer() ?: home_url('/');
             $msg = is_string($result) && !empty($result) ? $result : 'Impossibile scaricare la tessera.';
-            wp_safe_redirect(add_query_arg('asi_error', rawurlencode($msg), $referer));
+            wp_safe_redirect(add_query_arg('asi_error', rawurlencode($msg), $this->get_return_url()));
             exit;
         }
     }
@@ -53,4 +69,5 @@ class Shortcode {
         include ASINAZIONALE_PLUGIN_PATH . 'templates/shortcode.php';
         return ob_get_clean();
     }
-}
+}
+
